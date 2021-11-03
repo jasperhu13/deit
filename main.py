@@ -33,6 +33,7 @@ def get_args_parser():
     # Model parameters
     parser.add_argument('--model', default='deit_base_patch16_224', type=str, metavar='MODEL',
                         help='Name of model to train')
+    parser.add_argument('--mvit', action='store_true')
     parser.add_argument('--input-size', default=224, type=int, help='images input size')
 
     parser.add_argument('--drop', type=float, default=0.0, metavar='PCT',
@@ -143,6 +144,7 @@ def get_args_parser():
     parser.add_argument('--inat-category', default='name',
                         choices=['kingdom', 'phylum', 'class', 'order', 'supercategory', 'family', 'genus', 'name'],
                         type=str, help='semantic granularity')
+    parser.add_argument('--num_classes', default = 30, type = int)
 
     parser.add_argument('--output_dir', default='',
                         help='path where to save, empty for no saving')
@@ -238,6 +240,7 @@ def main(args):
             label_smoothing=args.smoothing, num_classes=args.nb_classes)
 
     print(f"Creating model: {args.model}")
+    
     model = create_model(
         args.model,
         pretrained=False,
