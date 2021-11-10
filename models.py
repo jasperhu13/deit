@@ -9,7 +9,7 @@ import numpy as np
 from functools import reduce
 import operator
 import numpy
-import math
+import json
 from timm.models.vision_transformer import VisionTransformer, _cfg
 from timm.models.registry import register_model
 from timm.models.layers import trunc_normal_
@@ -963,7 +963,7 @@ class TransformerBasicHead(nn.Module):
         if not self.training:
             x = self.act(x)
         return x
-def make_mvit_imagenet(inds, weights = None, device = None):
+def make_mvit_imagenet(inds = None, weights = None, device = 'cpu'):
     model = MViT(data_num_frames = 1,
                 mvit_patch_2d = True, 
                 mvit_patch_kernel = [7, 7],
@@ -979,11 +979,13 @@ def make_mvit_imagenet(inds, weights = None, device = None):
                 model_dropout_rate = 0.0)
     if weights:
         model.load_state_dict(torch.load(weights, map_location=device)['model_state'], strict = False)
-    new_weights = model.head.projection.weight.data[inds,:]
-    new_bias = model.head.projection.bias.data[inds]
+    if inds:
+        new_weights = model.head.projection.weight.data[inds,:]
+        new_bias = model.head.projection.bias.data[inds]
     model.head.projection = nn.Linear(768, 30)
-    model.head.projection.weight.data = new_weights
-    model.head.projection.bias.data = new_bias
+    if inds:
+        model.head.projection.weight.data = new_weights
+        model.head.projection.bias.data = new_bias
     return model
 def make_mvit_kinetics600(weights = None):
     model = MViT(mvit_sep_pos_embed=True, data_num_frames=1, mvit_patch_kernel = [1, 7, 7],
@@ -999,8 +1001,43 @@ def make_mvit_kinetics600(weights = None):
 @register_model
 def mvit_kinetics600(pretrained = False, **kwargs):
     if pretrained:
-       # return make_mvit_kinetics600(weights = "/content/drive/MyDrive/Colab Notebooks/research/multiscale/k600.pyth")
-       return make_mvit_kinetics600(weights="C:/Users/Jasper/Education/Research/k600.pyth")
+       return make_mvit_kinetics600(weights = "/content/drive/MyDrive/Colab Notebooks/research/multiscale/k600.pyth")
+       #return make_mvit_kinetics600(weights="C:/Users/Jasper/Education/Research/k600.pyth")
     else:
         return make_mvit_kinetics600()
+
+def get_imagenet_inds():
+  with open('/content/drive/MyDrive/Colab Notebooks/research/multiscale/Data/imagenet-30/classes.json') as json_file:
+    classes = json.load(json_file)
+  indices = []
+  root_dir = '/content/drive/MyDrive/Colab Notebooks/research/multiscale/Data/imagenet-30/val'
+
+
+  verify_dict = {}
+  classes_1k = []
+  with open('/content/drive/MyDrive/Colab Notebooks/research/multiscale/map_clsloc.txt') as file:
+    for line in file:
+      (fn, idx, lab) = line.split()
+      classes_1k.append(fn)
+      verify_dict[fn] = lab
+  classes_1k = sorted(classes_1k)
+  cls_all_map = {}
+  i = 0
+  for cls in classes_1k:
+    cls_all_map[cls] = i
+    i += 1
+
+  cls_idx_map = {}
+  for cls in classes.keys():
+    cls_idx_map[cls] = cls_all_map[cls]
+  inds = np.array(sorted(list(set(cls_idx_map.values()))))
+  return inds
+@register_model
+def mvit_imagenet(pretrained = False, **kwargs):
+    if pretrained:
+        inds = get_imagenet_inds()
+        return make_mvit_imagenet(inds = inds, weights = "/content/drive/MyDrive/Colab Notebooks/research/multiscale/IN1K_MVIT_B_16_CONV.py")
+    else:
+        return make_mvit_imagenet()
+        
 
