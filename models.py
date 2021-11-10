@@ -979,11 +979,11 @@ def make_mvit_imagenet(inds = None, weights = None, device = 'cpu'):
                 model_dropout_rate = 0.0)
     if weights:
         model.load_state_dict(torch.load(weights, map_location=device)['model_state'], strict = False)
-    if inds:
+    if inds is not None:
         new_weights = model.head.projection.weight.data[inds,:]
         new_bias = model.head.projection.bias.data[inds]
     model.head.projection = nn.Linear(768, 30)
-    if inds:
+    if inds is not None:
         model.head.projection.weight.data = new_weights
         model.head.projection.bias.data = new_bias
     return model
@@ -1036,7 +1036,7 @@ def get_imagenet_inds():
 def mvit_imagenet(pretrained = False, **kwargs):
     if pretrained:
         inds = get_imagenet_inds()
-        return make_mvit_imagenet(inds = inds, weights = "/content/drive/MyDrive/Colab Notebooks/research/multiscale/IN1K_MVIT_B_16_CONV.py")
+        return make_mvit_imagenet(inds = inds, weights = "/content/drive/MyDrive/Colab Notebooks/research/multiscale/IN1K_MVIT_B_16_CONV.pyth")
     else:
         return make_mvit_imagenet()
         
