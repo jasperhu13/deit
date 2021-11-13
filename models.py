@@ -993,8 +993,8 @@ def make_mvit_kinetics600(weights = None):
                 mvit_patch_padding = [0, 3, 3])
     if weights:
         state_dict = torch.load(weights, map_location='cpu')['model_state']
-        state_dict.pop("pos_embed_temporal")
-        state_dict.pop("patch_embed.proj.weight")
+        state_dict["pos_embed_temporal"] = torch.mean(state_dict["pos_embed_temporal"], dim = 1).unsqueeze(1)
+        state_dict["patch_embed.proj.weight"] = torch.mean(state_dict["patch_embed.proj.weight"], dim = 2).unsqueeze(2)
         model.load_state_dict(state_dict, strict = False)
     model.head.projection = nn.Linear(768, 30)
     return model
