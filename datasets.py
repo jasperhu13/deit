@@ -55,12 +55,12 @@ class INatDataset(ImageFolder):
 class ImageNetC(ImageFolder):
     def __init__(
             self,
-            root: str,
-            loader: Callable[[str], Any],
-            extensions: Optional[Tuple[str, ...]] = None,
-            transform: Optional[Callable] = None,
-            target_transform: Optional[Callable] = None,
-            is_valid_file: Optional[Callable[[str], bool]] = None,
+            root,
+            loader,
+            extensions = None,
+            transform = None,
+            target_transform = None,
+            is_valid_file = None,
     ) -> None:
         super(ImageFolder, self).__init__(root, transform=transform,
                                             target_transform=target_transform)
@@ -76,11 +76,11 @@ class ImageNetC(ImageFolder):
         self.targets = [s[1] for s in samples]
         self.imgs = self.samples
     def make_dataset(self,
-        directory: str,
-        class_to_idx: Dict[str, int],
-        extensions: Optional[Tuple[str, ...]] = None,
-        is_valid_file: Optional[Callable[[str], bool]] = None,
-    ) -> List[Tuple[str, int]]:
+        directory,
+        class_to_idx,
+        extensions = None,
+        is_valid_file = None,
+    ):
 
         directory = os.path.expanduser(directory)
 
@@ -128,16 +128,16 @@ class ImageNetC(ImageFolder):
         return instances
     
     
-    def find_classes(self, directory: str) -> Tuple[List[str], Dict[str, int]]:
-        corruptions = sorted((entry.name, entry.path) for entry in os.scandir(directory) if entry.is_dir(), key = lambda x:x[0])
+    def find_classes(self, directory) :
+        corruptions = sorted([(entry.name, entry.path) for entry in os.scandir(directory) if entry.is_dir()], key = lambda x:x[0])
         all_splits = []
         for corruption in corruptions:
-            splits = sorted((os.join(corruption[0],  entry.name), entry.path) for entry in os.scandir(corruption[1]) if entry.is_dir(), key = lambda x:x[0])
+            splits = sorted([(os.join(corruption[0],  entry.name), entry.path) for entry in os.scandir(corruption[1]) if entry.is_dir()], key = lambda x:x[0])
             all_splits.extend(splits)
 
         all_classes = []
         for split in all_splits:
-            some_classes = sorted((os.join(split[0], entry.name), entry.name, entry.path) for entry in os.scandir(corruption[1]) if entry.is_dir(), key = lambda x:x[0])
+            some_classes = sorted([(os.join(split[0], entry.name), entry.name, entry.path) for entry in os.scandir(corruption[1]) if entry.is_dir()], key = lambda x:x[0])
             all_classes.extend(some_classes)
         if not all_classes:
             raise FileNotFoundError(f"Couldn't find any class folder in {directory}.")
@@ -148,7 +148,7 @@ class ImageNetC(ImageFolder):
 
 
 class ImageNetR(ImageFolder):
-    def find_classes(self, directory: str) -> Tuple[List[str], Dict[str, int]]:
+    def find_classes(self, directory):
 
         classes = sorted(entry.name for entry in os.scandir(directory) if entry.is_dir())
         if not classes:
