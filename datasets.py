@@ -56,8 +56,6 @@ class ImageNetC(ImageFolder):
     def __init__(
             self,
             root,
-            loader,
-            extensions = None,
             transform = None,
             target_transform = None,
             is_valid_file = None,
@@ -65,10 +63,7 @@ class ImageNetC(ImageFolder):
         super(ImageFolder, self).__init__(root, transform=transform,
                                             target_transform=target_transform)
         classes, class_to_idx = self.find_classes(self.root)
-        samples = self.make_dataset(self.root, class_to_idx, extensions, is_valid_file)
-
-        self.loader = loader
-        self.extensions = extensions
+        samples = self.make_dataset(self.root, class_to_idx, self.extensions, is_valid_file)
 
         self.classes = classes
         self.class_to_idx = class_to_idx
