@@ -11,6 +11,7 @@ from timm.data import create_transform
 
 from typing import cast, Any, Callable, Dict, List, Optional, Tuple
 
+import numpy as np
 
 class INatDataset(ImageFolder):
     def __init__(self, root, train=True, year=2018, transform=None, target_transform=None,
@@ -76,6 +77,31 @@ def is_image_file(filename: str) -> bool:
         bool: True if the filename ends with a known image extension
     """
     return has_file_allowed_extension(filename, IMG_EXTENSIONS)
+def get_imagenet30_idxmap():
+  with open('/home/jasper/imagenet-30/classes.json') as json_file:
+    classes = json.load(json_file)
+
+  verify_dict = {}
+  classes_1k = []
+  with open('/home/jasper/map_clsloc.txt') as file:
+    for line in file:
+      (fn, idx, lab) = line.split()
+      classes_1k.append(fn)
+      verify_dict[fn] = lab
+  classes_1k = sorted(classes_1k)
+  cls_all_map = {}
+  i = 0
+  for cls in classes_1k:
+    cls_all_map[cls] = i
+    i += 1
+
+  cls_idx_map = {}
+  cls_ind_pair = []
+  for cls in classes.keys():
+    cls_ind_pair.append((cls, cls_all_map[cls]))
+  cls_idx_map = {pair[0]:i for i, pair in enumerate(sorted(cls_ind_pair, key = lambda x:x[1]))}
+
+  return cls_idx_map
 class ImageNetC(ImageFolder):
     def __init__(
             self,
@@ -153,17 +179,16 @@ class ImageNetC(ImageFolder):
         for corruption in corruptions:
             splits = sorted([(os.path.join(corruption[1],  entry.name), entry.path) for entry in os.scandir(corruption[1]) if entry.is_dir()], key = lambda x:x[0])
             all_splits.extend(splits)
-
+        classes = get_imagenet30_idxmap()
         all_classes = []
         for split in all_splits:
-            some_classes = sorted([(os.path.join(split[1], entry.name), entry.name, entry.path) for entry in os.scandir(split[0]) if entry.is_dir()], key = lambda x:x[0])
+            some_classes = sorted([(os.path.join(split[1], entry.name), entry.name, entry.path) for entry in os.scandir(split[0]) if entry.is_dir() and entry.name in classes.keys()], key = lambda x:x[0])
             all_classes.extend(some_classes)
         if not all_classes:
             raise FileNotFoundError(f"Couldn't find any class folder in {directory}.")
-        classes = list(set(x[1] for x in all_classes))
-        class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
-        all_class_to_idx = {cls_name[0]: class_to_idx[cls_name[1]] for cls_name in all_classes}
-        return classes, all_class_to_idx
+       
+        all_class_to_idx = {cls_name[0]: classes[cls_name[1]] for cls_name in all_classes}
+        return list(classes.keys()), all_class_to_idx
 
 
 class ImageNetR(ImageFolder):
