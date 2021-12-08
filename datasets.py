@@ -9,6 +9,8 @@ from torchvision.datasets.folder import ImageFolder, default_loader
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import create_transform
 
+from typing import cast, Any, Callable, Dict, List, Optional, Tuple
+
 
 class INatDataset(ImageFolder):
     def __init__(self, root, train=True, year=2018, transform=None, target_transform=None,
@@ -60,7 +62,7 @@ class ImageNetC(ImageFolder):
             target_transform = None,
             is_valid_file = None,
     ) -> None:
-        super(ImageFolder, self).__init__(root, transform=transform,
+        super().__init__(root, transform=transform,
                                             target_transform=target_transform)
         classes, class_to_idx = self.find_classes(self.root)
         samples = self.make_dataset(self.root, class_to_idx, self.extensions, is_valid_file)
@@ -127,12 +129,12 @@ class ImageNetC(ImageFolder):
         corruptions = sorted([(entry.name, entry.path) for entry in os.scandir(directory) if entry.is_dir()], key = lambda x:x[0])
         all_splits = []
         for corruption in corruptions:
-            splits = sorted([(os.join(corruption[0],  entry.name), entry.path) for entry in os.scandir(corruption[1]) if entry.is_dir()], key = lambda x:x[0])
+            splits = sorted([(os.path.join(corruption[1],  entry.name), entry.path) for entry in os.scandir(corruption[1]) if entry.is_dir()], key = lambda x:x[0])
             all_splits.extend(splits)
 
         all_classes = []
         for split in all_splits:
-            some_classes = sorted([(os.join(split[0], entry.name), entry.name, entry.path) for entry in os.scandir(corruption[1]) if entry.is_dir()], key = lambda x:x[0])
+            some_classes = sorted([(os.path.join(split[1], entry.name), entry.name, entry.path) for entry in os.scandir(split[0]) if entry.is_dir()], key = lambda x:x[0])
             all_classes.extend(some_classes)
         if not all_classes:
             raise FileNotFoundError(f"Couldn't find any class folder in {directory}.")
