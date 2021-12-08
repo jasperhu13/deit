@@ -83,7 +83,7 @@ def get_imagenet30_idxmap():
 
   verify_dict = {}
   classes_1k = []
-  with open('/home/jasper/map_clsloc.txt') as file:
+  with open('/home/jasper/deit/map_clsloc.txt') as file:
     for line in file:
       (fn, idx, lab) = line.split()
       classes_1k.append(fn)
