@@ -1001,8 +1001,9 @@ def make_mvit_kinetics600(weights = None):
 @register_model
 def mvit_kinetics600(pretrained = False, **kwargs):
     if pretrained:
-       return make_mvit_kinetics600(weights = "/content/drive/MyDrive/Colab Notebooks/research/multiscale/k600.pyth")
-       #return make_mvit_kinetics600(weights="C:/Users/Jasper/Education/Research/k600.pyth")
+      # return make_mvit_kinetics600(weights = "/content/drive/MyDrive/Colab Notebooks/research/multiscale/k600.pyth")
+     #  return make_mvit_kinetics600(weights="C:/Users/Jasper/Education/Research/k600.pyth")
+        return make_mvit_kinetics600(weights="/home/jasper/k600.pyth")
     else:
         return make_mvit_kinetics600()
 
