@@ -223,6 +223,9 @@ def build_dataset(is_train, args):
     elif args.data_set == 'IMNET-C':
         dataset = ImageNetC(args.data_path, transform = transform)
         nb_classes = args.num_classes
+    elif args.data_set == 'IMFOLDER':
+        dataset = datasets.ImageFolder(args.data_path, transform=transform)
+        nb_classes = args.num_classes
 
 
     return dataset, nb_classes
