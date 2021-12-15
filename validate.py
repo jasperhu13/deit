@@ -71,7 +71,7 @@ def find_classes(directory) :
     
     all_class_to_idx = {cls_name[0]: classes[cls_name[1]] for cls_name in all_classes}
     return list(classes.keys()), all_class_to_idx
-def create_symlinks():
+def create_symlinks(directory):
     corruptions = sorted([(entry.name, entry.path) for entry in os.scandir(directory) if entry.is_dir()], key = lambda x:x[0])
     all_splits = []
     for corruption in corruptions:
