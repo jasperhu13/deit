@@ -72,17 +72,21 @@ def find_classes(directory) :
     all_class_to_idx = {cls_name[0]: classes[cls_name[1]] for cls_name in all_classes}
     return list(classes.keys()), all_class_to_idx
 def create_symlinks(directory):
-    corruptions = sorted([(entry.name, entry.path) for entry in os.scandir(directory) if entry.is_dir()], key = lambda x:x[0])
+    root = "/home/jasper/imagenet-30/corruptions"
+    corruptions = sorted([(entry.name, entry.path,os.path.join(root, entry.name)) for entry in os.scandir(directory) if entry.is_dir()], key = lambda x:x[0])
     all_splits = []
     for corruption in corruptions:
-        splits = sorted([(os.path.join(corruption[1],  entry.name), entry.path) for entry in os.scandir(corruption[1]) if entry.is_dir()], key = lambda x:x[0])
+        splits = sorted([(os.path.join(corruption[1], entry.name), os.path.join(corruption[2],  entry.name), entry.path) for entry in os.scandir(corruption[1]) if entry.is_dir()], key = lambda x:x[0])
         all_splits.extend(splits)
     with open('/home/jasper/imagenet-30/classes.json') as json_file:
         classes = json.load(json_file)
     for split in all_splits:
+
+        os.makedirs(split[1],exist_ok =True)
         for entry in os.scandir(split[0]):
             if entry.is_dir() and entry.name in classes.keys():
-                print(entry.path)
+#                print(os.path.join(split[1], entry.name))
+                os.symlink(entry.path, os.path.join(split[1], entry.name))
 
 def validate(val_loader, model, device):
   model.eval()
@@ -108,3 +112,4 @@ def validate(val_loader, model, device):
      # num_top5 += top5_cts
       
   return num_top1/num_total
+create_symlinks("/home/data/imagenet/corruptions/")
