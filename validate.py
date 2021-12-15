@@ -1,3 +1,4 @@
+from torchvision import transforms
 from models import mvit_kinetics600
 import torch, torchvision
 from torchvision.datasets.folder import ImageFolder
@@ -5,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import torch.nn as nn
 import os, json
-
+from timm.data import create_transform
 def get_imagenet_inds():
   with open('/content/drive/MyDrive/Colab Notebooks/research/multiscale/Data/imagenet-30/classes.json') as json_file:
     classes = json.load(json_file)
@@ -74,6 +75,7 @@ def find_classes(directory) :
     all_class_to_idx = {cls_name[0]: classes[cls_name[1]] for cls_name in all_classes}
     return list(classes.keys()), all_class_to_idx
 def eval_corruptions(root = "/home/jasper/imagenet-30/corruptions"):
+    transforms = create_transform((256, 256))
     model = mvit_kinetics600(pretrained=True)
     accs = []
     for corruption in os.scandir(root):
@@ -81,7 +83,7 @@ def eval_corruptions(root = "/home/jasper/imagenet-30/corruptions"):
             corruption_accs = []
             for split in os.scandir(corruption):
                 if split.is_dir():
-                    dataset = ImageFolder(split.path)
+                    dataset = ImageFolder(split.path, transform=transforms)
                     loader = DataLoader(dataset)
                     acc = validate(loader, model, 'cuda')
                     print("corruption:", corruption.name, "difficulty: ", split.name, "accuracy: ", acc)
