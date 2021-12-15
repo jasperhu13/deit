@@ -87,6 +87,15 @@ def create_symlinks(directory):
             if entry.is_dir() and entry.name in classes.keys():
 #                print(os.path.join(split[1], entry.name))
                 os.symlink(entry.path, os.path.join(split[1], entry.name))
+def create_renditions(directory):
+    root = "/home/jasper/imagenet-30/renditions"
+    with open('/home/jasper/imagenet-30/classes.json') as json_file:
+        classes = json.load(json_file)
+
+    for entry in os.scandir(directory):
+        if entry.is_dir() and entry.name in classes.keys():
+               # print(os.path.join(root, entry.name))
+            os.symlink(entry.path, os.path.join(root, entry.name))
 
 def validate(val_loader, model, device):
   model.eval()
@@ -112,4 +121,5 @@ def validate(val_loader, model, device):
      # num_top5 += top5_cts
       
   return num_top1/num_total
-create_symlinks("/home/data/imagenet/corruptions/")
+#create_symlinks("/home/data/imagenet/corruptions/")
+create_renditions("/home/data/imagenet/renditions/")
