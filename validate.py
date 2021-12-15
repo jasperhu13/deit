@@ -1,5 +1,7 @@
 from models import mvit_kinetics600
 import torch, torchvision
+from torchvision.datasets.folder import ImageFolder
+from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import torch.nn as nn
 import os, json
@@ -71,6 +73,25 @@ def find_classes(directory) :
     
     all_class_to_idx = {cls_name[0]: classes[cls_name[1]] for cls_name in all_classes}
     return list(classes.keys()), all_class_to_idx
+def eval_corruptions(root = "/home/jasper/imagenet-30/corruptions"):
+    model = mvit_kinetics600(pretrained=True)
+    accs = []
+    for corruption in os.scandir(root):
+        if corruption.is_dir():
+            corruption_accs = []
+            for split in os.scandir(corruption):
+                if split.is_dir():
+                    dataset = ImageFolder(split.path)
+                    loader = DataLoader(dataset)
+                    acc = validate(loader, model, 'cuda')
+                    print("corruption:", corruption.name, "difficulty: ", split.name, "accuracy: ", acc)
+                    corruption_accs.append(acc)
+            print("Average "+corruption.name + " Accuracy", np.mean(corruption_accs) )
+            accs.append(corruption_accs)
+    print("Average Overall Accuracy: ", np.mean(accs))
+        
+
+
 def create_symlinks(directory):
     root = "/home/jasper/imagenet-30/corruptions"
     corruptions = sorted([(entry.name, entry.path,os.path.join(root, entry.name)) for entry in os.scandir(directory) if entry.is_dir()], key = lambda x:x[0])
@@ -119,7 +140,7 @@ def validate(val_loader, model, device):
       num_top1 += top1_cts
      # print(num_top1)
      # num_top5 += top5_cts
-      
   return num_top1/num_total
+
 #create_symlinks("/home/data/imagenet/corruptions/")
-create_renditions("/home/data/imagenet/renditions/")
+#create_renditions("/home/data/imagenet/renditions/")
