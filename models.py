@@ -978,11 +978,14 @@ def make_mvit_imagenet(inds = None, weights = None, device = 'cpu'):
                 mvit_pool_kv_stride_adaptive = [1, 4,4],
                 model_dropout_rate = 0.0)
     if weights:
-        model.load_state_dict(torch.load(weights, map_location=device)['model_state'], strict = False)
+
+        model.head.projection = nn.Linear(768, 30)
+        model.load_state_dict(torch.load(weights, map_location=device)['model'], strict = False)
+        #model.load_state_dict(torch.load(weights, map_location=device)['model_state'], strict = False)
     if inds is not None:
         new_weights = model.head.projection.weight.data[inds,:]
         new_bias = model.head.projection.bias.data[inds]
-    model.head.projection = nn.Linear(768, 30)
+   # model.head.projection = nn.Linear(768, 30)
     if inds is not None:
         model.head.projection.weight.data = new_weights
         model.head.projection.bias.data = new_bias
@@ -992,18 +995,22 @@ def make_mvit_kinetics600(weights = None):
                 mvit_patch_stride = [1, 4, 4],
                 mvit_patch_padding = [0, 3, 3])
     if weights:
-        state_dict = torch.load(weights, map_location='cpu')['model_state']
-        state_dict["pos_embed_temporal"] = torch.mean(state_dict["pos_embed_temporal"], dim = 1).unsqueeze(1)
-        state_dict["patch_embed.proj.weight"] = torch.mean(state_dict["patch_embed.proj.weight"], dim = 2).unsqueeze(2)
-        model.load_state_dict(state_dict, strict = False)
-    model.head.projection = nn.Linear(768, 30)
+        model.head.projection = nn.Linear(768, 30)
+        #state_dict = torch.load(weights, map_location='cpu')['model_state']
+        state_dict = torch.load(weights, map_location='cpu')['model']
+        #state_dict["pos_embed_temporal"] = torch.mean(state_dict["pos_embed_temporal"], dim = 1).unsqueeze(1)
+        #state_dict["patch_embed.proj.weight"] = torch.mean(state_dict["patch_embed.proj.weight"], dim = 2).unsqueeze(2)
+        model.load_state_dict(state_dict, strict = True)
+    #model.head.projection = nn.Linear(768, 30)
     return model
 @register_model
 def mvit_kinetics600(pretrained = False, **kwargs):
     if pretrained:
       # return make_mvit_kinetics600(weights = "/content/drive/MyDrive/Colab Notebooks/research/multiscale/k600.pyth")
      #  return make_mvit_kinetics600(weights="C:/Users/Jasper/Education/Research/k600.pyth")
-        return make_mvit_kinetics600(weights="/home/jasper/k600.pyth")
+        #return make_mvit_kinetics600(weights="/home/jasper/k600.pyth")
+        return make_mvit_kinetics600(weights="/home/jasper/data/mvitk600_lr5e-5/checkpoint.pth")
+
     else:
         return make_mvit_kinetics600()
 
@@ -1036,8 +1043,9 @@ def get_imagenet_inds():
 @register_model
 def mvit_imagenet(pretrained = False, **kwargs):
     if pretrained:
-        inds = get_imagenet_inds()
-        return make_mvit_imagenet(inds = inds, weights = "/content/drive/MyDrive/Colab Notebooks/research/multiscale/IN1K_MVIT_B_16_CONV.pyth")
+        #inds = get_imagenet_inds()
+        #return make_mvit_imagenet(inds = inds, weights = "/content/drive/MyDrive/Colab Notebooks/research/multiscale/IN1K_MVIT_B_16_CONV.pyth")
+        return make_mvit_imagenet(weights = '/home/jasper/data/imagenet_187/checkpoint.pth')
     else:
         return make_mvit_imagenet()
         

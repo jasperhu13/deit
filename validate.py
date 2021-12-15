@@ -1,5 +1,5 @@
 from torchvision import transforms
-from models import mvit_kinetics600
+from models import mvit_kinetics600, mvit_imagenet
 import torch, torchvision
 from torchvision.datasets.folder import ImageFolder
 from torch.utils.data import Dataset, DataLoader
@@ -7,6 +7,7 @@ import numpy as np
 import torch.nn as nn
 import os, json
 from timm.data import create_transform
+import matplotlib.pyplot as plt
 def get_imagenet_inds():
   with open('/content/drive/MyDrive/Colab Notebooks/research/multiscale/Data/imagenet-30/classes.json') as json_file:
     classes = json.load(json_file)
@@ -75,22 +76,68 @@ def find_classes(directory) :
     all_class_to_idx = {cls_name[0]: classes[cls_name[1]] for cls_name in all_classes}
     return list(classes.keys()), all_class_to_idx
 def eval_corruptions(root = "/home/jasper/imagenet-30/corruptions"):
-    transforms = create_transform((256, 256))
-    model = mvit_kinetics600(pretrained=True)
-    accs = []
+    transforms = create_transform(224)
+    model1 = mvit_kinetics600(pretrained=True)
+
+    model2 = mvit_imagenet(pretrained=True)
+
+
+    k_accs = []
+    i_accs = []
+    corruptions = []
     for corruption in os.scandir(root):
         if corruption.is_dir():
-            corruption_accs = []
+            kcorr_accs = []
+            icorr_accs = []
+            splits = []
             for split in os.scandir(corruption):
                 if split.is_dir():
                     dataset = ImageFolder(split.path, transform=transforms)
-                    loader = DataLoader(dataset)
-                    acc = validate(loader, model, 'cuda')
-                    print("corruption:", corruption.name, "difficulty: ", split.name, "accuracy: ", acc)
-                    corruption_accs.append(acc)
-            print("Average "+corruption.name + " Accuracy", np.mean(corruption_accs) )
-            accs.append(corruption_accs)
-    print("Average Overall Accuracy: ", np.mean(accs))
+                    loader = DataLoader(dataset, batch_size = 64)
+                    acc1 = validate(loader, model1, 'cuda')
+
+                    acc2 = validate(loader, model2, 'cuda')
+                    print("Model: Kinetics, corruption:", corruption.name, "difficulty: ", split.name, "accuracy: ", acc1)
+                    print("Model: Imagenet, corruption:", corruption.name, "difficulty: ", split.name, "accuracy: ", acc2)
+                    splits.append(split.name)
+                    kcorr_accs.append(acc1)
+                    icorr_accs.append(acc2)
+            
+            print("Kinetics Average "+corruption.name + " Accuracy", np.mean(kcorr_accs) )
+            print("Imagenet Average "+corruption.name + " Accuracy", np.mean(icorr_accs) )
+            plt.figure()
+            index = np.arange(5)
+            bar_width = 0.35
+            plt.bar(index, kcorr_accs, width = bar_width)
+            plt.bar(index+bar_width, icorr_accs, width = bar_width)
+            plt.xticks(index + bar_width/2, labels = splits)
+            plt.xlabel("difficulty")
+            plt.ylabel("accuracy")
+            plt.title(corruption.name + "model accuracy comparison")
+            plt.legend(["Kinetics", "Imagenet"])
+            plt.savefig(os.path.join("/home/jasper/data/eval/corruptions",corruption.name))
+
+            corruptions.append(corruption.name)
+            k_accs.append(kcorr_accs)
+            i_accs.append(icorr_accs)
+    k_means = [np.mean(x) for x in k_accs]
+    i_means = [np.mean(x) for x in i_accs]
+    plt.figure()
+    index = np.arange(5)
+    bar_width = 0.35
+    plt.bar(index, k_means, width = bar_width)
+    plt.bar(index+bar_width, i_means, width = bar_width)
+    plt.xticks(index + bar_width/2, labels = corruptions)
+    plt.xlabel("difficulty")
+    plt.ylabel("average corruptionaccuracy")
+    plt.title("Corruptions model accuracy comparison")
+    plt.legend(["Kinetics", "Imagenet"])
+    plt.savefig("/home/jasper/data/eval/corruptions/overall")
+
+
+
+    print("Kinetics Average Overall Accuracy: ", np.mean(k_accs))
+    print("Imagenet Average Overall Accuracy: ", np.mean(i_accs))
         
 
 
@@ -124,13 +171,14 @@ def validate(val_loader, model, device):
   model.eval()
   num_top1 = 0
   num_top5 = 0
+  model = model.to(device)
   num_total = len(val_loader.dataset)
 
   with torch.no_grad():
     for i, (images, target) in enumerate(val_loader):
       images = images.to(device)
       target = target.to(device)
-      output = model(images.unsqueeze(0))
+      output = model(images)
       #output = output[:, inds]
       _, top1 = torch.topk(output, 1, dim = 1)
     #  _, top5 = torch.topk(output, 5, dim = 1)
@@ -142,7 +190,8 @@ def validate(val_loader, model, device):
       num_top1 += top1_cts
      # print(num_top1)
      # num_top5 += top5_cts
-  return num_top1/num_total
+  return (num_top1/num_total).item()
 
 #create_symlinks("/home/data/imagenet/corruptions/")
 #create_renditions("/home/data/imagenet/renditions/")
+eval_corruptions()
