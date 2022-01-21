@@ -8,6 +8,7 @@ import torch.nn as nn
 import os, json
 from timm.data import create_transform
 import matplotlib.pyplot as plt
+from typing import Any, Callable, cast, Dict, List, Optional, Tuple
 def get_imagenet_inds():
   with open('/content/drive/MyDrive/Colab Notebooks/research/multiscale/Data/imagenet-30/classes.json') as json_file:
     classes = json.load(json_file)
@@ -138,7 +139,82 @@ def eval_corruptions(root = "/home/jasper/imagenet-30/corruptions"):
 
     print("Kinetics Average Overall Accuracy: ", np.mean(k_accs))
     print("Imagenet Average Overall Accuracy: ", np.mean(i_accs))
+def make_dataset(
+    directory: str,
+    class_to_idx: Optional[Dict[str, int]] = None,
+    extensions: Optional[Tuple[str, ...]] = None,
+    is_valid_file: Optional[Callable[[str], bool]] = None,
+) -> List[Tuple[str, int]]:
+    directory = os.path.expanduser(directory)
+
+    if class_to_idx is None:
+        _, class_to_idx = find_classes(directory)
+    elif not class_to_idx:
+        raise ValueError("'class_to_index' must have at least one entry to collect any samples.")
+
+    both_none = extensions is None and is_valid_file is None
+    both_something = extensions is not None and is_valid_file is not None
+    if both_none or both_something:
+        raise ValueError("Both extensions and is_valid_file cannot be None or not None at the same time")
+
+    if extensions is not None:
+
+        def is_valid_file(x: str) -> bool:
+            return has_file_allowed_extension(x, cast(Tuple[str, ...], extensions))
+
+    is_valid_file = cast(Callable[[str], bool], is_valid_file)
+
+    instances = []
+    available_classes = set()
+    for target_class in sorted(class_to_idx.keys()):
+        class_index = class_to_idx[target_class]
+        target_dir = os.path.join(directory, target_class)
+        if not os.path.isdir(target_dir):
+            continue
+        for root, _, fnames in sorted(os.walk(target_dir, followlinks=True)):
+            for fname in sorted(fnames):
+                if is_valid_file(fname):
+                    path = os.path.join(root, fname)
+                    item = path, class_index
+                    instances.append(item)
+
+                    if target_class not in available_classes:
+                        available_classes.add(target_class)
+
+    return instances
+
+class RenditionsFolder(ImageFolder):
+    @staticmethod
+    def make_dataset(
+        directory: str,
+        class_to_idx: Dict[str, int],
+        extensions: Optional[Tuple[str, ...]] = None,
+        is_valid_file: Optional[Callable[[str], bool]] = None,
+    ) -> List[Tuple[str, int]]:
+        if class_to_idx is None:
+            raise ValueError(
+                "The class_to_idx parameter cannot be None."
+            )
+        return make_dataset(directory, class_to_idx, extensions=extensions, is_valid_file=is_valid_file)
         
+def eval_renditions(root = "/home/jasper/imagenet-30/renditions"):
+    transforms = create_transform(224)
+    model1 = mvit_kinetics600(pretrained=True)
+
+    model2 = mvit_imagenet(pretrained=True)
+
+
+    dataset = RenditionsFolder(root, transform=transforms, is_valid_file = lambda x: True)
+    loader = DataLoader(dataset, batch_size = 64)
+    acc1 = validate(loader, model1, 'cuda')
+
+    acc2 = validate(loader, model2, 'cuda')
+   
+    print("Kinetics Average Overall Accuracy: ", acc1)
+    print("Imagenet Average Overall Accuracy: ", acc2)
+        
+
+
 
 
 def create_symlinks(directory):
@@ -166,6 +242,14 @@ def create_renditions(directory):
         if entry.is_dir() and entry.name in classes.keys():
                # print(os.path.join(root, entry.name))
             os.symlink(entry.path, os.path.join(root, entry.name))
+def fill_classes(root = "/home/jasper/imagenet-30/renditions"):
+    with open('/home/jasper/imagenet-30/classes.json') as json_file:
+        classes = json.load(json_file)
+    for cls in classes.keys():
+        path = os.path.join(root, cls)
+        if not os.path.isdir(path):
+            os.mkdir(path)
+
 
 def validate(val_loader, model, device):
   model.eval()
@@ -194,4 +278,6 @@ def validate(val_loader, model, device):
 
 #create_symlinks("/home/data/imagenet/corruptions/")
 #create_renditions("/home/data/imagenet/renditions/")
-eval_corruptions()
+#eval_corruptions()
+eval_renditions()
+#fill_classes()

@@ -1870,7 +1870,7 @@ class CustomUNet256(torch.nn.Module):
         attention_ds = []
         for res in attention_resolutions.split(","):
             attention_ds.append(256 // int(res))
-        class_cond = True
+        class_cond = False
         learn_sigma = True
         num_channels = 256
         num_head_channels = 64
@@ -1903,14 +1903,16 @@ class CustomUNet256(torch.nn.Module):
             state_dict = torch.load(weights, map_location='cpu')
             model.load_state_dict(state_dict, strict = True)
         self.model = model
-        self.fc = nn.Linear(65536, 30)
-    def forward(self, x, timesteps, y = None):
+        self.timesteps = torch.Tensor([1]).cuda().float()
+        self.fc = nn.Linear(802816, 30).float()
+    def forward(self, x,  y = None):
         assert (y is not None) == (
             self.num_classes is not None
         ), "must specify y if and only if the model is class-conditional"
 
+       
         hs = []
-        emb = self.model.time_embed(timestep_embedding(timesteps, self.model.model_channels))
+        emb = self.model.time_embed(timestep_embedding(self.timesteps, self.model.model_channels).type(self.model.dtype))
 
         if self.num_classes is not None:
             assert y.shape == (x.shape[0],)
@@ -1928,7 +1930,7 @@ class CustomUNet256(torch.nn.Module):
 @register_model
 def unet256_dist(pretrained = False, **kwargs):
     if pretrained:
-        return CustomUNet256(weights = "../../256x256_diffusion.pt")
+        return CustomUNet256(weights = "../256x256_diffusion_uncond.pt")
     else:
         return CustomUNet256()
 
