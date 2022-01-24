@@ -34,7 +34,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: DistillationLoss,
         if mixup_fn is not None:
             samples, targets = mixup_fn(samples, targets)
 
-        with torch.cuda.amp.autocast():
+        with torch.cuda.amp.autocast(enabled = False):
             outputs = model(samples)
             loss = criterion(samples, outputs, targets)
 
@@ -50,7 +50,11 @@ def train_one_epoch(model: torch.nn.Module, criterion: DistillationLoss,
         is_second_order = hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
         loss_scaler(loss, optimizer, clip_grad=max_norm,
                     parameters=model.parameters(), create_graph=is_second_order)
-
+        """
+        loss_scaler.scale(loss).backward()
+        loss_scaler.step(optimizer)
+        loss_scaler.update()
+        """
         torch.cuda.synchronize()
         if model_ema is not None:
             model_ema.update(model)

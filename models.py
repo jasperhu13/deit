@@ -820,7 +820,8 @@ class UNetModel(nn.Module):
             assert y.shape == (x.shape[0],)
             emb = emb + self.label_emb(y)
 
-        h = x.type(self.dtype)
+        h = x
+        #h = x.type(self.dtype)
         for module in self.input_blocks:
             h = module(h, emb)
             hs.append(h)
@@ -828,7 +829,7 @@ class UNetModel(nn.Module):
         for module in self.output_blocks:
             h = th.cat([h, hs.pop()], dim=1)
             h = module(h, emb)
-        h = h.type(x.dtype)
+        #h = h.type(x.dtype)
         return self.out(h)
 
 
@@ -1903,27 +1904,36 @@ class CustomUNet256(torch.nn.Module):
             state_dict = torch.load(weights, map_location='cpu')
             model.load_state_dict(state_dict, strict = True)
         self.model = model
-        self.timesteps = torch.Tensor([1]).cuda().float()
-        self.fc = nn.Linear(802816, 30).float()
+        convert_module_to_f32(self.model)
+        self.timesteps = torch.Tensor([1, 1]).cuda()
+        self.fc = nn.Linear(301056, 30)
     def forward(self, x,  y = None):
+        """
         assert (y is not None) == (
             self.num_classes is not None
         ), "must specify y if and only if the model is class-conditional"
+        
 
+        print("1")
        
         hs = []
         emb = self.model.time_embed(timestep_embedding(self.timesteps, self.model.model_channels).type(self.model.dtype))
 
+        print("2")
         if self.num_classes is not None:
             assert y.shape == (x.shape[0],)
             emb = emb + self.model.label_emb(y)
 
+        print("3")
         h = x.type(self.model.dtype)
         for module in self.model.input_blocks:
             h = module(h, emb)
             hs.append(h)
         h = self.model.middle_block(h, emb)
-        out = self.fc(h.flatten())
+        print("4")
+        """
+        h = self.model(x, self.timesteps, y)
+        out = self.fc(torch.flatten(h, 1))
         return out
 
 
