@@ -1823,6 +1823,8 @@ class CustomUNet256(torch.nn.Module):
             print(model.load_state_dict(state_dict, strict = False))
         self.model = model
         convert_module_to_f32(self.model)
+        for param in self.model.parameters():
+            param.requires_grad = False
         self.timesteps = torch.Tensor([1, 1]).cuda()
         self.fc = nn.Linear(301056, 30)
     def forward(self, x,  y = None):
