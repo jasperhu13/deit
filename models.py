@@ -1827,7 +1827,7 @@ class CustomUNet256(torch.nn.Module):
         for param in self.model.parameters():
             param.requires_grad = False
         self.timesteps = torch.Tensor([1 for x in range(32)]).cuda()
-        self.fc = nn.Linear(301056, 30)
+        self.fc = nn.Linear(50176, 30)
     def forward(self, x,  y = None):
         """
         assert (y is not None) == (
