@@ -706,84 +706,7 @@ class UNetModel(nn.Module):
                 ds *= 2
                 self._feature_size += ch
 
-        self.middle_block = TimestepEmbedSequential(
-            ResBlock(
-                ch,
-                time_embed_dim,
-                dropout,
-                dims=dims,
-                use_checkpoint=use_checkpoint,
-                use_scale_shift_norm=use_scale_shift_norm,
-            ),
-            AttentionBlock(
-                ch,
-                use_checkpoint=use_checkpoint,
-                num_heads=num_heads,
-                num_head_channels=num_head_channels,
-                use_new_attention_order=use_new_attention_order,
-            ),
-            ResBlock(
-                ch,
-                time_embed_dim,
-                dropout,
-                dims=dims,
-                use_checkpoint=use_checkpoint,
-                use_scale_shift_norm=use_scale_shift_norm,
-            ),
-        )
-        self._feature_size += ch
-
-        self.output_blocks = nn.ModuleList([])
-        for level, mult in list(enumerate(channel_mult))[::-1]:
-            for i in range(num_res_blocks + 1):
-                ich = input_block_chans.pop()
-                layers = [
-                    ResBlock(
-                        ch + ich,
-                        time_embed_dim,
-                        dropout,
-                        out_channels=int(model_channels * mult),
-                        dims=dims,
-                        use_checkpoint=use_checkpoint,
-                        use_scale_shift_norm=use_scale_shift_norm,
-                    )
-                ]
-                ch = int(model_channels * mult)
-                if ds in attention_resolutions:
-                    layers.append(
-                        AttentionBlock(
-                            ch,
-                            use_checkpoint=use_checkpoint,
-                            num_heads=num_heads_upsample,
-                            num_head_channels=num_head_channels,
-                            use_new_attention_order=use_new_attention_order,
-                        )
-                    )
-                if level and i == num_res_blocks:
-                    out_ch = ch
-                    layers.append(
-                        ResBlock(
-                            ch,
-                            time_embed_dim,
-                            dropout,
-                            out_channels=out_ch,
-                            dims=dims,
-                            use_checkpoint=use_checkpoint,
-                            use_scale_shift_norm=use_scale_shift_norm,
-                            up=True,
-                        )
-                        if resblock_updown
-                        else Upsample(ch, conv_resample, dims=dims, out_channels=out_ch)
-                    )
-                    ds //= 2
-                self.output_blocks.append(TimestepEmbedSequential(*layers))
-                self._feature_size += ch
-
-        self.out = nn.Sequential(
-            normalization(ch),
-            nn.SiLU(),
-            zero_module(conv_nd(dims, input_ch, out_channels, 3, padding=1)),
-        )
+       
 
     def convert_to_fp16(self):
         """
@@ -824,12 +747,8 @@ class UNetModel(nn.Module):
         for module in self.input_blocks:
             h = module(h, emb)
             hs.append(h)
-        h = self.middle_block(h, emb)
-        for module in self.output_blocks:
-            h = th.cat([h, hs.pop()], dim=1)
-            h = module(h, emb)
-        h = h.type(x.dtype)
-        return self.out(h)
+     
+        return h
 
 
 
