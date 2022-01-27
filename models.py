@@ -777,7 +777,11 @@ class UNetModel(nn.Module):
                     ds //= 2
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
                 self._feature_size += ch
-
+        self.out = nn.Sequential(
+            normalization(ch),
+            nn.SiLU(),
+            zero_module(conv_nd(dims, input_ch, out_channels, 3, padding=1)),
+        )
 
     def convert_to_fp16(self):
         """
