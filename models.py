@@ -1826,7 +1826,7 @@ class CustomUNet256(torch.nn.Module):
         convert_module_to_f32(self.model)
         for param in self.model.parameters():
             param.requires_grad = False
-        self.timesteps = torch.Tensor([1 for x in range(32)]).cuda()
+        
         self.fc = nn.Linear(50176, 30)
     def forward(self, x,  y = None):
         """
@@ -1834,7 +1834,7 @@ class CustomUNet256(torch.nn.Module):
             self.num_classes is not None
         ), "must specify y if and only if the model is class-conditional"
         
-
+        
         print("1")
        
         hs = []
@@ -1853,6 +1853,7 @@ class CustomUNet256(torch.nn.Module):
         h = self.model.middle_block(h, emb)
         print("4")
         """
+        self.timesteps = torch.Tensor([1 for _ in range(x.size()[0])]).cuda()
         h = self.model(x, self.timesteps, y)
         out = self.fc(torch.flatten(h, 1))
         return out
