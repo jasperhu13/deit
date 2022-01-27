@@ -705,6 +705,7 @@ class UNetModel(nn.Module):
                 input_block_chans.append(ch)
                 ds *= 2
                 self._feature_size += ch
+
         self.middle_block = TimestepEmbedSequential(
             ResBlock(
                 ch,
@@ -777,6 +778,7 @@ class UNetModel(nn.Module):
                     ds //= 2
                 self.output_blocks.append(TimestepEmbedSequential(*layers))
                 self._feature_size += ch
+
         self.out = nn.Sequential(
             normalization(ch),
             nn.SiLU(),
