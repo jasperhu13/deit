@@ -832,6 +832,7 @@ class UNetModel(nn.Module):
         return self.out(h)
 
 
+
 class SuperResModel(UNetModel):
     """
     A UNetModel that performs super-resolution.
