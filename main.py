@@ -1,5 +1,13 @@
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
+import wandb
+
+wandb.init(project="my-test-project", entity="jasperhu13")
+wandb.config = {
+        "learning_rate": 5e-4,
+        "epochs": 100, 
+        "batch_size": 16
+        }
 import argparse
 import datetime
 import numpy as np
@@ -398,6 +406,7 @@ def main(args):
                 }, checkpoint_path)
 
         test_stats = evaluate(data_loader_val, model, device)
+        wandb.log({"accuracy": test_stats['acc1']})
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
         max_accuracy = max(max_accuracy, test_stats["acc1"])
         print(f'Max accuracy: {max_accuracy:.2f}%')

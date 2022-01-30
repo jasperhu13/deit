@@ -1824,8 +1824,12 @@ class CustomUNet256(torch.nn.Module):
             print(model.load_state_dict(state_dict, strict = False))
         self.model = model
         convert_module_to_f32(self.model)
+        i = 0
         for param in self.model.parameters():
-            param.requires_grad = False
+            #212 input block 4, time embed
+            if i < 100:
+                param.requires_grad = False
+            i += 1
         
         self.fc = nn.Linear(50176, 30)
     def forward(self, x,  y = None):
