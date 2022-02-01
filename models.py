@@ -1827,10 +1827,10 @@ class CustomUNet256(torch.nn.Module):
         i = 0
         for param in self.model.parameters():
             #212 input block 4, time embed
-            if i < 100:
-                param.requires_grad = False
-            i += 1
-        
+          #  if i < 100:
+            param.requires_grad = False
+          #  i += 1
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(50176, 30)
     def forward(self, x,  y = None):
         """
@@ -1857,8 +1857,9 @@ class CustomUNet256(torch.nn.Module):
         h = self.model.middle_block(h, emb)
         print("4")
         """
-        self.timesteps = torch.Tensor([1 for _ in range(x.size()[0])]).cuda()
+        self.timesteps = torch.Tensor([0 for _ in range(x.size()[0])]).cuda()
         h = self.model(x, self.timesteps, y)
+        h = self.avgpool(h)
         out = self.fc(torch.flatten(h, 1))
         return out
 
