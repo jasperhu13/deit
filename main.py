@@ -6,6 +6,8 @@ wandb.init(project="my-test-project", entity="jasperhu13")
 wandb.config = {
         "learning_rate": 5e-4,
         "epochs": 100, 
+        "weight_decay": 0.05,
+        "sgd": False,
         "batch_size": 48,
         "avg_pool": "adaptive",
         "timestep": 0

@@ -1827,11 +1827,12 @@ class CustomUNet256(torch.nn.Module):
         i = 0
         for param in self.model.parameters():
             #212 input block 4, time embed
-          #  if i < 100:
-            param.requires_grad = False
-          #  i += 1
+            if i < 100:
+                param.requires_grad = False
+            i += 1
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(50176, 30)
+        #self.fc = nn.Linear(50176, 30)
+        self.fc = nn.Linear(1024, 30)
     def forward(self, x,  y = None):
         """
         assert (y is not None) == (
