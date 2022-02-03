@@ -705,6 +705,32 @@ class UNetModel(nn.Module):
                 input_block_chans.append(ch)
                 ds *= 2
                 self._feature_size += ch
+        self.middle_block = TimestepEmbedSequential(
+            ResBlock(
+                ch,
+                time_embed_dim,
+                dropout,
+                dims=dims,
+                use_checkpoint=use_checkpoint,
+                use_scale_shift_norm=use_scale_shift_norm,
+            ),
+            AttentionBlock(
+                ch,
+                use_checkpoint=use_checkpoint,
+                num_heads=num_heads,
+                num_head_channels=num_head_channels,
+                use_new_attention_order=use_new_attention_order,
+            ),
+            ResBlock(
+                ch,
+                time_embed_dim,
+                dropout,
+                dims=dims,
+                use_checkpoint=use_checkpoint,
+                use_scale_shift_norm=use_scale_shift_norm,
+            ),
+        )
+        self._feature_size += ch
 
        
 
@@ -747,7 +773,7 @@ class UNetModel(nn.Module):
         for module in self.input_blocks:
             h = module(h, emb)
             hs.append(h)
-     
+        h = self.middle_block(h, emb)  
         return h
 
 
@@ -1827,9 +1853,9 @@ class CustomUNet256(torch.nn.Module):
         i = 0
         for param in self.model.parameters():
             #212 input block 4, time embed
-            if i < 100:
-                param.requires_grad = False
-            i += 1
+            #if i < 100:
+            param.requires_grad = False
+           # i += 1
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         #self.fc = nn.Linear(50176, 30)
         self.fc = nn.Linear(1024, 30)
