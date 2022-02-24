@@ -3,7 +3,7 @@
 import wandb
 wandb.login(key= 'fe8ec1cec9c2664d08155f20a05553c68da55972')
 
-wandb.init(project="my-imagenet-project", entity="jasperhu13")
+wandb.init(project="my-imagenet-linear-project", entity="jasperhu13")
 wandb.config = {
         "learning_rate": 5e-4,
         "epochs": 100, 
@@ -326,8 +326,9 @@ def main(args):
     optimizer = create_optimizer(args, model_without_ddp)
     if args.train_linear:
         parameters = list(filter(lambda p: p.requires_grad, model.parameters()))
+        print(len(parameters))
         assert len(parameters) == 2
-	optimizer = create_optimizer(args, parameters)
+        optimizer = create_optimizer(args, parameters)
     #loss_scaler = torch.cuda.amp.GradScaler(enabled = False)
     loss_scaler = NativeScaler()
 

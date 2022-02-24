@@ -1852,11 +1852,15 @@ class CustomUNet256(torch.nn.Module):
         self.model = model
         #convert_module_to_f16(self.model)
         i = 0
-        #for param in self.model.parameters():
+        #linear_keyword = 'fc'
+       # for name, param in model.named_parameters():
+       #     if name not in ['%s.weight' % linear_keyword, '%s.bias' % linear_keyword]:
+       #         param.requires_grad = False
+        for param in self.model.parameters():
             #212 input block 4, time embed
-            #if i < 100:
-        #    param.requires_grad = False
-           # i += 1
+            if i <= 241:
+             param.requires_grad = False
+            i += 1
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         #self.fc = nn.Linear(50176, 30)
         self.fc = nn.Linear(1024, 1000)
@@ -1895,7 +1899,8 @@ class CustomUNet256(torch.nn.Module):
 @register_model
 def unet256_dist(pretrained = False, **kwargs):
     if pretrained:
-        return CustomUNet256(weights = "/scratch/users/thenorm/256x256_diffusion_uncond.pt")
+#        return CustomUNet256(weights = "/scratch/users/thenorm/256x256_diffusion_uncond.pt")
+        return CustomUNet256(weights = "/home/jasper/256x256_diffusion_uncond.pt")
     else:
         return CustomUNet256()
 
