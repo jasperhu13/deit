@@ -62,6 +62,8 @@ def get_args_parser():
     parser.add_argument('--model-ema-decay', type=float, default=0.99996, help='')
     parser.add_argument('--model-ema-force-cpu', action='store_true', default=False, help='')
 
+    parser.add_argument('--train_linear', action = 'store_true')
+
     # Optimizer parameters
     parser.add_argument('--opt', default='adamw', type=str, metavar='OPTIMIZER',
                         help='Optimizer (default: "adamw"')
@@ -322,6 +324,10 @@ def main(args):
     linear_scaled_lr = args.lr * args.batch_size * utils.get_world_size() / 512.0
     args.lr = linear_scaled_lr
     optimizer = create_optimizer(args, model_without_ddp)
+    if args.train_linear:
+        parameters = list(filter(lambda p: p.requires_grad, model.parameters()))
+        assert len(parameters) == 2
+	optimizer = create_optimizer(args, parameters)
     #loss_scaler = torch.cuda.amp.GradScaler(enabled = False)
     loss_scaler = NativeScaler()
 
@@ -395,7 +401,7 @@ def main(args):
             model, criterion, data_loader_train,
             optimizer, device, epoch, loss_scaler,
             args.clip_grad, model_ema, mixup_fn,
-            set_training_mode=args.finetune == ''  # keep in eval mode during finetuning
+            set_training_mode=(args.finetune == '' or args.train_linear)  # keep in eval mode during finetuning
         )
 
         lr_scheduler.step(epoch)
