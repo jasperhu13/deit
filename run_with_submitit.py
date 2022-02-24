@@ -113,7 +113,7 @@ def main():
 
     executor.update_parameters(name="deit")
 
-    args.dist_url = get_init_file().as_uri()
+    #args.dist_url = get_init_file().as_uri()
     args.output_dir = args.job_dir
 
     trainer = Trainer(args)

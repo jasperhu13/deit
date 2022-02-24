@@ -1,8 +1,9 @@
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
 import wandb
+wandb.login(key= 'fe8ec1cec9c2664d08155f20a05553c68da55972')
 
-wandb.init(project="my-test-project", entity="jasperhu13")
+wandb.init(project="my-imagenet-project", entity="jasperhu13")
 wandb.config = {
         "learning_rate": 5e-4,
         "epochs": 100, 
@@ -41,6 +42,8 @@ def get_args_parser():
     parser = argparse.ArgumentParser('DeiT training and evaluation script', add_help=False)
     parser.add_argument('--batch-size', default=64, type=int)
     parser.add_argument('--epochs', default=300, type=int)
+    parser.add_argument("--local_rank", type=int, default=4)
+ 
 
     # Model parameters
     parser.add_argument('--model', default='deit_base_patch16_224', type=str, metavar='MODEL',
@@ -184,7 +187,7 @@ def get_args_parser():
 
 def main(args):
     utils.init_distributed_mode(args)
-
+ 
     print(args)
 
     if args.distillation_type != 'none' and args.finetune and not args.eval:
