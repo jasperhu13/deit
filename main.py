@@ -1,18 +1,7 @@
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
 import wandb
-wandb.login(key= 'fe8ec1cec9c2664d08155f20a05553c68da55972')
 
-wandb.init(project="my-imagenet-linear-project", entity="jasperhu13")
-wandb.config = {
-        "learning_rate": 5e-4,
-        "epochs": 100, 
-        "weight_decay": 0.05,
-        "sgd": False,
-        "batch_size": 48,
-        "avg_pool": "adaptive",
-        "timestep": 0
-        }
 import argparse
 import datetime
 import numpy as np
@@ -242,7 +231,7 @@ def main(args):
 
     data_loader_val = torch.utils.data.DataLoader(
         dataset_val, sampler=sampler_val,
-        batch_size=int(1.5 * args.batch_size),
+        batch_size=args.batch_size,
         num_workers=args.num_workers,
         pin_memory=args.pin_mem,
         drop_last=False
@@ -323,12 +312,14 @@ def main(args):
 
     linear_scaled_lr = args.lr * args.batch_size * utils.get_world_size() / 512.0
     args.lr = linear_scaled_lr
-    optimizer = create_optimizer(args, model_without_ddp)
+    #optimizer = create_optimizer(args, model_without_ddp)
     if args.train_linear:
         parameters = list(filter(lambda p: p.requires_grad, model.parameters()))
         print(len(parameters))
         assert len(parameters) == 2
         optimizer = create_optimizer(args, parameters)
+    else:
+        optimizer = create_optimizer(args, model_without_ddp)
     #loss_scaler = torch.cuda.amp.GradScaler(enabled = False)
     loss_scaler = NativeScaler()
 
@@ -385,7 +376,19 @@ def main(args):
                 utils._load_checkpoint_for_ema(model_ema, checkpoint['model_ema'])
             if 'scaler' in checkpoint:
                 loss_scaler.load_state_dict(checkpoint['scaler'])
+    if utils.is_main_process():
+        wandb.login(key= 'fe8ec1cec9c2664d08155f20a05553c68da55972')
 
+        wandb.init(project="my-imagenet-linear-project", entity="jasperhu13")
+        wandb.config = {
+        "learning_rate": 5e-4,
+        "epochs": 100, 
+        "weight_decay": 0.05,
+        "sgd": False,
+        "batch_size": 48,
+        "avg_pool": "adaptive",
+        "timestep": 0
+        }
     if args.eval:
         test_stats = evaluate(data_loader_val, model, device)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
@@ -420,7 +423,8 @@ def main(args):
                 }, checkpoint_path)
 
         test_stats = evaluate(data_loader_val, model, device)
-        wandb.log({"accuracy": test_stats['acc1']})
+        if utils.is_main_process():
+            wandb.log({"accuracy": test_stats['acc1']})
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
         max_accuracy = max(max_accuracy, test_stats["acc1"])
         print(f'Max accuracy: {max_accuracy:.2f}%')
